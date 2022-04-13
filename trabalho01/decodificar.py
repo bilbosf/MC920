@@ -2,11 +2,11 @@ import sys
 from skimage import io
 import numpy as np
 
-if(len(sys.argv) != 2):
-    print('Modo de uso: $python decodificar.py imagem_entrada.png')
+if(len(sys.argv) != 3):
+    print('Modo de uso: $python decodificar.py imagem_entrada.png texto_saida.txt')
     exit()
 
-img_path = sys.argv[1]
+img_path, output_path = sys.argv[1:3]
 
 img = io.imread(img_path)
 
@@ -18,5 +18,5 @@ data = (r_data << 5) + (g_data << 2) + b_data
 eof = np.where(data == ord('%'))[0][0] # Determinação do fim da mensagem
 data = data[:eof]
 
-with open(img_path[:-11] + '_decoded.txt', 'wb') as text_file:
+with open(output_path, 'wb') as text_file:
     text_file.write(data)

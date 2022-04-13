@@ -1,0 +1,27 @@
+OBS: Especificar na parte da entrada que o texto tem que estar em ASCII e não pode conter o caractere '%'
+IDEIA: Determinar quantos bytes tem na mensagem e usar slicing para zerar apenas os bits que serão utilizados na esteganografia
+img[:x,:y,0] &= 0b11111000
+OBS: Mover cálculo do pixel_amount mais pra perto de onde é usado.
+
+IMPLEMENTAÇÃO
+CODIFICAÇÃO
+A ideia principal da codificação é armazenar os bytes da mensagem a ser escondida nos bits menos significativos em cada uma das bandas da imagem. Para isso, foi decidido usar no máximo 3 bits de cada banda, de forma a não distorcer a imagem ao ponto de ser perceptível ao olho humano.
+
+O algoritmo usa operações vetorizadas otimizadas pelo módulo numpy, de maneira que o torna bem mais rápido do que implementações mais ingênuas (iterativas). Para facilitar o uso dessas operações vetorizadas, foi decidido que cada pixel da imagem armazenaria exatamente um byte do texto. Dessa forma, o uso de espaço é um pouco menos eficiente, já que com a restrição de no máximo 3 bits por banda teríamos a possibilidade de ter 9 bits de mensagem por pixel, em vez de só 8. No entanto, essa restrição torna o código consideravelmente mais simples e rápido, e a perda não é tão significativa assim.
+
+Dessa maneira, a cada byte da mensagem foi armazenado da seguinte forma: os 3 bits mais significativos são armazenados na banda vermelha, os 3 bits seguintes na banda verde e os 2 bits menos significativos na banda azul.
+
+A imagem é primeiramente lida usando a função imread do módulo scikit-image e armazenada em um numpy.ndarray. Depois, os bits da imagem que serão usados para esconder a mensagem são zerados com um AND bitwise usando a máscara apropriada.
+
+A mensagem é lida usando a função fromfile do módulo numpy, e também é armazenada em um ndarray de bytes. É adicionado um caractere '%' no final desse array, que também será cofificado na imagem e será interpretado pelo decodificador como um demarcador de fim de arquivo.
+
+Depois disso, são utilizadas operações bitwise para separar os trechos de cada byte da mensagem que ficarão em cada banda, conforme foi descrito anteriormente. Essas operações são todas vetorizadas, o que aumenta a velocidade de execução. Ao fim dessas operações, r_mask, g_mask e b_mask contém todos os bits da mensagem, separados por banda e prontos para serem acrescentados nos espaços que foram previamente limpos na imagem. Antes de fazer isso, porém, é necessário redimensionar esses arrays de forma que tenham o mesmo tamanho e formato das bandas da imagem. Isso é feito usando os métodos resize e reshape.
+
+Com isso, são feitas operações OR bitwise para inserir a mensagem nos espaços limpos, e a imagem codificada é salva com a função imsave.
+
+Além da codificação da mensagem em si, são feitos também cálculos para separar e exibir os planos de bits da mensagem. Eles são exibidos usando o módulo matplotlib, com auxílio do scikit-image.
+
+
+
+DECODIFICAÇÃO
+O decodificador é consideravelmente mais simples. A imagem codificada é lida com a função imread. Depois, ANDs bitwise são usados para separar apenas os bits que fazem parte da mensagem em cada banda, e os arrays são achatados usando o método flatten. Com isso, são feitos shifts para posicionar os bits nos locais certos e eles são somados para reconstruir a mensagem. A função numpy.where é usada para encontrar o caractere de fim de arquivo '%', e o resto do array depois do fim do arquivo é ignorado. Por fim, a mensagem recuperada é salva em um arquivo de texto.
